@@ -2,7 +2,6 @@
 #define IMAGE_LOADER_H
 
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_image.h>
 #include <stdbool.h>
 
 // Error codes for image loading operations
@@ -16,7 +15,7 @@ typedef enum {
 } ImageLoadError;
 
 // Structure to hold image data and metadata
-typedef struct {
+typedef struct ImageData {
     SDL_Surface* surface;
     int width;
     int height;

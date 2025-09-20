@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <SDL2/SDL_image.h>
 
 bool analyze_image(const ImageData* image_data, ImageAnalysis* analysis) {
     if (!image_data || !image_data->surface || !analysis) {

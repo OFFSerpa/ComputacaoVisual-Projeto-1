@@ -67,3 +67,54 @@ bool gui_frame(GuiApp* app) {
 
     return true;
 }
+
+SDL_Texture* gui_make_texture_from_surface(SDL_Renderer* ren, SDL_Surface* surf) {
+    if (!ren || !surf) return NULL;
+    SDL_Texture* tex = SDL_CreateTextureFromSurface(ren, surf);
+    if (!tex) {
+        fprintf(stderr, "Erro ao criar textura: %s\n", SDL_GetError());
+    }
+    return tex;
+}
+
+void gui_draw_texture_fit(SDL_Renderer* ren, SDL_Texture* tex,
+                          int win_w, int win_h, int img_w, int img_h) {
+    if (!ren || !tex) return;
+
+    float ar_img = (float)img_w / (float)img_h;
+    float ar_win = (float)win_w / (float)win_h;
+    SDL_Rect dst;
+
+    if (ar_img > ar_win) {
+        dst.w = win_w;
+        dst.h = (int)(win_w / ar_img);
+        dst.x = 0;
+        dst.y = (win_h - dst.h) / 2;
+    } else {
+        dst.h = win_h;
+        dst.w = (int)(win_h * ar_img);
+        dst.y = 0;
+        dst.x = (win_w - dst.w) / 2;
+    }
+
+    SDL_RenderCopy(ren, tex, NULL, &dst);
+}
+
+void gui_draw_panel_background(SDL_Renderer* r, int w, int h) {
+    if (!r) return;
+
+    // Cabeçalho
+    SDL_Rect header = {0, 0, w, 64};
+    SDL_SetRenderDrawColor(r, 40, 40, 40, 255);
+    SDL_RenderFillRect(r, &header);
+
+    // Rodapé
+    SDL_Rect footer = {0, h - 64, w, 64};
+    SDL_SetRenderDrawColor(r, 40, 40, 40, 255);
+    SDL_RenderFillRect(r, &footer);
+
+    // Caixa central de histograma (placeholder)
+    SDL_Rect hist = {16, 80, w - 32, h - 160};
+    SDL_SetRenderDrawColor(r, 60, 60, 60, 255);
+    SDL_RenderDrawRect(r, &hist);
+}

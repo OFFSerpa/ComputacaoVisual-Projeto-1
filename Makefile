@@ -1,6 +1,5 @@
 # Detect OS
 ifeq ($(OS),Windows_NT)
-    # Windows settings
     CC = gcc
     CFLAGS = -Wall -Wextra -std=c99 -g
     LIBS = -lmingw32 -lSDL2main -lSDL2 -lSDL2_image
@@ -9,7 +8,6 @@ ifeq ($(OS),Windows_NT)
     MKDIR = mkdir
     SEP = \\
 else
-    # Unix/Linux/macOS settings
     CC = gcc
     CFLAGS = -Wall -Wextra -std=c99 -g
     LIBS = -lSDL2 -lSDL2_image
@@ -17,54 +15,61 @@ else
     RM = rm -rf
     MKDIR = mkdir -p
     SEP = /
-    
-    # Check if we're on macOS and add Homebrew paths
+
+    # macOS com Homebrew
     UNAME_S := $(shell uname -s)
     ifeq ($(UNAME_S),Darwin)
-        # macOS with Homebrew paths
         HOMEBREW_PREFIX := $(shell brew --prefix)
         CFLAGS += -I$(HOMEBREW_PREFIX)/include
         LIBS := -L$(HOMEBREW_PREFIX)/lib $(LIBS)
     endif
 endif
 
-# Directories
-SRCDIR = .
-OBJDIR = obj
-BINDIR = bin
+# Diretórios
+SRCDIR  = src
+OBJDIR  = obj
+BINDIR  = bin
+IMAGEDIR = images
 
-# Source files
-SOURCES = main.c image_loader.c image_analysis.c
-OBJECTS = $(SOURCES:%.c=$(OBJDIR)$(SEP)%.o)
-TARGET = $(BINDIR)$(SEP)image_loader_demo$(TARGET_EXT)
+# Includes do projeto
+INCLUDES = -I$(SRCDIR) -I$(SRCDIR)/core -I$(SRCDIR)/gui
 
-# Default target
+# Fontes e objetos
+SOURCES := $(wildcard $(SRCDIR)/*.c) \
+           $(wildcard $(SRCDIR)/core/*.c) \
+           $(wildcard $(SRCDIR)/gui/*.c)
+
+# Ex.: src/core/image_loader.c -> obj/core/image_loader.o
+OBJECTS := $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(SOURCES))
+
+TARGET  = $(BINDIR)$(SEP)image_loader_demo$(TARGET_EXT)
+
+# Alvo padrão
 all: directories $(TARGET)
 
-# Create necessary directories
+# Cria diretórios necessários
 directories:
 ifeq ($(OS),Windows_NT)
 	@if not exist "$(OBJDIR)" $(MKDIR) "$(OBJDIR)"
+	@if not exist "$(OBJDIR)$(SEP)core" $(MKDIR) "$(OBJDIR)$(SEP)core"
+	@if not exist "$(OBJDIR)$(SEP)gui" $(MKDIR) "$(OBJDIR)$(SEP)gui"
 	@if not exist "$(BINDIR)" $(MKDIR) "$(BINDIR)"
 else
-	@$(MKDIR) $(OBJDIR) $(BINDIR)
+	@$(MKDIR) $(OBJDIR) $(OBJDIR)/core $(OBJDIR)/gui $(BINDIR)
 endif
 
-# Build the main executable
+# Link final
 $(TARGET): $(OBJECTS)
 	$(CC) $(OBJECTS) -o $@ $(LIBS)
 	@echo "Build complete: $(TARGET)"
 
-# Compile source files to object files
-ifeq ($(OS),Windows_NT)
-$(OBJDIR)$(SEP)%.o: $(SRCDIR)$(SEP)%.c
-	$(CC) $(CFLAGS) -c $< -o $@
-else
+# Regra genérica de compilação preservando subpastas
+# Garante que a subpasta de obj/ exista antes de compilar
 $(OBJDIR)/%.o: $(SRCDIR)/%.c
-	$(CC) $(CFLAGS) -c $< -o $@
-endif
+	@$(MKDIR) $(dir $@)
+	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
-# Clean build artifacts
+# Limpeza
 clean:
 ifeq ($(OS),Windows_NT)
 	@if exist "$(OBJDIR)" rmdir /S /Q "$(OBJDIR)"
@@ -74,62 +79,56 @@ else
 endif
 	@echo "Clean complete"
 
-# Install SDL2 and SDL2_image (Windows with MSYS2/MinGW)
+# Instalação de dependências
 install-deps-windows:
-	pacman -S mingw-w64-x86_64-SDL2 mingw-w64-x86_64-SDL2_image
+	pacman -S --needed mingw-w64-x86_64-SDL2 mingw-w64-x86_64-SDL2_image
 
-# Install using vcpkg (Windows alternative)
 install-deps-vcpkg:
 	vcpkg install sdl2 sdl2-image
 
-# Install SDL2 and SDL2_image (Ubuntu/Debian)
 install-deps-ubuntu:
 	sudo apt-get update
-	sudo apt-get install libsdl2-dev libsdl2-image-dev
+	sudo apt-get install -y libsdl2-dev libsdl2-image-dev
 
-# Install SDL2 and SDL2_image (macOS with Homebrew)
 install-deps-macos:
 	brew install sdl2 sdl2_image
 
-# Install SDL2 and SDL2_image (Arch Linux)
 install-deps-arch:
 	sudo pacman -S sdl2 sdl2_image
 
-# Run the program with a test image
+# Executar com uma imagem de teste
 test: $(TARGET)
-	@echo "Running with test image (if available)..."
+	@echo "Running with test image if available..."
 ifeq ($(OS),Windows_NT)
-	@if exist "test.png" ( $(TARGET) test.png ) else if exist "test.jpg" ( $(TARGET) test.jpg ) else ( echo No test image found. Usage: $(TARGET) ^<image_file^> && $(TARGET) )
+	@if exist "$(IMAGEDIR)\\test.png" ( $(TARGET) "$(IMAGEDIR)\\test.png" ) else \
+	if exist "$(IMAGEDIR)\\test.jpg" ( $(TARGET) "$(IMAGEDIR)\\test.jpg" ) else \
+	( echo No test image found. Usage: $(TARGET) ^<image_file^> && $(TARGET) )
 else
-	@if [ -f "test.png" ]; then \
-		./$(TARGET) test.png; \
-	elif [ -f "test.jpg" ]; then \
-		./$(TARGET) test.jpg; \
+	@if [ -f "$(IMAGEDIR)/test.png" ]; then \
+		./$(TARGET) "$(IMAGEDIR)/test.png"; \
+	elif [ -f "$(IMAGEDIR)/test.jpg" ]; then \
+		./$(TARGET) "$(IMAGEDIR)/test.jpg"; \
 	else \
 		echo "No test image found. Usage: ./$(TARGET) <image_file>"; \
 		./$(TARGET); \
 	fi
 endif
 
-# Debug build
+# Builds convenientes
 debug: CFLAGS += -DDEBUG -g3
 debug: clean all
 
-# Release build
 release: CFLAGS += -O3 -DNDEBUG
 release: clean all
 
-# Help target
 help:
-	@echo "Available targets:"
-	@echo "  all              - Build the project (default)"
-	@echo "  clean            - Remove build artifacts"
-	@echo "  test             - Build and run with test image"
-	@echo "  debug            - Build debug version"
-	@echo "  release          - Build optimized release version"
-	@echo "  install-deps-windows - Install SDL2 dependencies using MSYS2/MinGW"
-	@echo "  install-deps-vcpkg   - Install SDL2 dependencies using vcpkg"
-	@echo "  install-deps-ubuntu  - Install SDL2 dependencies for Ubuntu/Debian"
-	@echo "  help             - Show this help message"
+	@echo "Targets:"
+	@echo "  all        Build"
+	@echo "  debug      Build com símbolos"
+	@echo "  release    Build otimizado"
+	@echo "  test       Roda com imagem de teste em images/"
+	@echo "  clean      Limpa artefatos"
+	@echo "  install-deps-*  Instala SDL2 e SDL2_image"
 
-.PHONY: all clean directories test debug release help install-deps-windows install-deps-vcpkg install-deps-ubuntu install-deps-macos install-deps-arch
+.PHONY: all clean directories test debug release help \
+        install-deps-windows install-deps-vcpkg install-deps-ubuntu install-deps-macos install-deps-arch
