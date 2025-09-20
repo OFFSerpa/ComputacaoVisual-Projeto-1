@@ -1,5 +1,17 @@
 # Computação Visual - Processamento de Imagens
 
+## Sobre o Projeto  
+
+Este projeto implementa um sistema de **processamento de imagens em C com SDL2**, capaz de:  
+
+- **Carregar** arquivos em múltiplos formatos (PNG, JPG, BMP, GIF, TIFF)  
+- **Analisar** dimensões, canais e metadados básicos  
+- **Converter** para escala de cinza utilizando a fórmula de luminância ITU-R BT.709  
+- **Calcular** estatísticas de intensidade média, mínima, máxima e contraste  
+- **Gerar** automaticamente novas imagens processadas e salvas em disco  
+
+A arquitetura é modular e preparada para evolução, permitindo incluir facilmente **visualização gráfica, histogramas e equalização de contraste** em etapas futuras.  
+
 ## Quick Start
 
 ### Build and Run
